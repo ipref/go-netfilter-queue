@@ -32,8 +32,6 @@ package netfilter
 import "C"
 
 import (
-	"code.google.com/p/gopacket"
-	"code.google.com/p/gopacket/layers"
 	"fmt"
 	"unsafe"
 )
@@ -51,7 +49,7 @@ type VerdictPacket struct {
 }
 
 type NFPacket struct {
-	Packet                 gopacket.Packet
+	InPacket               []byte
 	HookId                 Hook
 	verdictChannel         chan Verdict
 	verdictModifiedChannel chan VerdictPacket
@@ -165,15 +163,10 @@ type VerdictModified C.verdictModified
 //export go_callback
 func go_callback(queueId C.int, hookid C.uint8_t, data *C.uchar, length C.int, cb *chan NFPacket) VerdictModified {
 	xdata := C.GoBytes(unsafe.Pointer(data), length)
-	packet := gopacket.NewPacket(xdata, layers.LayerTypeIPv4, gopacket.DecodeOptions{
-		Lazy:               true,
-		NoCopy:             true,
-		SkipDecodeRecovery: false,
-	})
 	p := NFPacket{
 		verdictChannel:         make(chan Verdict),
 		verdictModifiedChannel: make(chan VerdictPacket),
-		Packet:                 packet,
+		InPacket:               xdata,
 		HookId:                 Hook(hookid),
 	}
 	select {
