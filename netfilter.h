@@ -35,7 +35,7 @@ typedef struct {
 } verdictModified;
 
 
-extern verdictModified go_callback(int id, unsigned char hookid, unsigned char* data, int len, void** cb_func);
+extern verdictModified go_callback(int id, unsigned dev, unsigned char hookid, unsigned char* data, int len, void** cb_func);
 
 
 static int nf_callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *cb_func){
@@ -44,13 +44,15 @@ static int nf_callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct n
     unsigned char *buffer = NULL;
     int ret = 0;
     uint8_t hookid;
+    uint32_t dev;
     ph = nfq_get_msg_packet_hdr(nfa);
     hookid = ph->hook;
     id = ntohl(ph->packet_id);
     ret = nfq_get_payload(nfa, &buffer);
+    dev = hookid < 3? nfq_get_indev(nfa): nfq_get_outdev(nfa);
 
     verdictModified v;
-    v = go_callback(id, hookid, buffer, ret, cb_func);
+    v = go_callback(id, dev, hookid, buffer, ret, cb_func);
     return nfq_set_verdict(qh, id, v.verdict, v.length, v.data);
 }
 

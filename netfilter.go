@@ -51,6 +51,7 @@ type VerdictPacket struct {
 type NFPacket struct {
 	InPacket               []byte
 	HookId                 Hook
+	DevIx                  int
 	verdictChannel         chan Verdict
 	verdictModifiedChannel chan VerdictPacket
 }
@@ -161,13 +162,14 @@ func (nfq *NFQueue) run() {
 type VerdictModified C.verdictModified
 
 //export go_callback
-func go_callback(queueId C.int, hookid C.uint8_t, data *C.uchar, length C.int, cb *chan NFPacket) VerdictModified {
+func go_callback(queueId C.int, dev C.uint32_t, hookid C.uint8_t, data *C.uchar, length C.int, cb *chan NFPacket) VerdictModified {
 	xdata := C.GoBytes(unsafe.Pointer(data), length)
 	p := NFPacket{
 		verdictChannel:         make(chan Verdict),
 		verdictModifiedChannel: make(chan VerdictPacket),
 		InPacket:               xdata,
 		HookId:                 Hook(hookid),
+		DevIx:					int(dev),
 	}
 	select {
 	case (*cb) <- p:
